@@ -1,0 +1,48 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: |
+          if [ -d /Applications/Xcode_26.6.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+          elif [ -d /Applications/Xcode_26.4.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.4.1.app/Contents/Developer
+          else
+            echo "Xcode 26 not found"; exit 1
+          fi
+          xcodebuild -version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Archive without signing
+        run: |
+          xcodebuild archive \
+            -project DSHConnect.xcodeproj \
+            -scheme DSHConnect \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/DSHConnect.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+      - name: Package unsigned IPA
+        run: |
+          rm -rf build/Payload build/DSHConnect-unsigned.ipa
+          mkdir -p build/Payload
+          cp -R build/DSHConnect.xcarchive/Products/Applications/DSHConnect.app build/Payload/
+          (cd build && zip -qry DSHConnect-unsigned.ipa Payload)
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSHConnect-unsigned-ipa
+          path: build/DSHConnect-unsigned.ipa
