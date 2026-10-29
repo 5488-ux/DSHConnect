@@ -15,12 +15,15 @@
 
 ```yaml
 name: DSH
-host: 192.168.1.20
+host: DESKTOP-N7TVKBQ.local
 port: 3080
 scheme: http
 path: /
 token: ""
 autoConnect: true
+fallbackHosts:
+  - dsh.local
+  - localhost
 discovery:
   service: _dsh._tcp
   fallbackServices:

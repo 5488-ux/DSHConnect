@@ -35,7 +35,15 @@ final class ConnectionStore: ObservableObject {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
             if let endpoint = discovery.endpoints.first { connect(to: endpoint) }
-            else if config.autoConnect { connect(to: config.host, port: config.port) }
+            else if config.autoConnect {
+                let hosts = [config.host] + config.fallbackHosts
+                var connectedHost: String?
+                for host in hosts where connectedHost == nil {
+                    if await Self.isReachable(host: host, port: config.port, scheme: config.scheme, path: config.path, token: config.token) { connectedHost = host }
+                }
+                if let connectedHost { connect(to: connectedHost, port: config.port) }
+                else { status = .failed("没有找到可连接的 DSH 主机") }
+            }
             else { status = .disconnected }
         }
     }
@@ -103,5 +111,16 @@ final class ConnectionStore: ObservableObject {
         if !token.isEmpty { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         guard let (_, response) = try? await URLSession.shared.data(for: request), let http = response as? HTTPURLResponse else { return false }
         return (200..<500).contains(http.statusCode)
+    }
+
+    private static func isReachable(host: String, port: Int, scheme: String, path: String, token: String) async -> Bool {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = host
+        components.port = port
+        components.path = path.isEmpty ? "/" : path
+        if !token.isEmpty { components.queryItems = [URLQueryItem(name: "token", value: token)] }
+        guard let url = components.url else { return false }
+        return await isReachable(url: url, token: token)
     }
 }

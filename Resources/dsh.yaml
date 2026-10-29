@@ -1,11 +1,14 @@
 name: DSH
 # 没有发现 Bonjour 时使用此地址；改成运行 DSH 的电脑或 Tailscale 地址
-host: dsh.local
+host: DESKTOP-N7TVKBQ.local
 port: 3080
 scheme: http
 path: /
 token: ""
 autoConnect: true
+fallbackHosts:
+  - dsh.local
+  - localhost
 discovery:
   service: _dsh._tcp
   fallbackServices:

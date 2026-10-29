@@ -13,6 +13,7 @@ struct DSHConfig: Codable {
     var path: String = "/"
     var token: String = ""
     var autoConnect: Bool = true
+    var fallbackHosts: [String] = []
     var discovery: DiscoveryConfig = DiscoveryConfig()
 }
 
